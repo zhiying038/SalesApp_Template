@@ -38,6 +38,8 @@ export const CartScreen: FC<AppStackScreenProps<"Cart">> = ({ navigation }) => {
   const event = useEvent();
   const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
+  const currency = cart?.Currency ?? "";
+
   const toggleSelectMode = useCallback(() => {
     setSelectMode((prev) => {
       if (prev) setSelectedItems(new Set());
@@ -68,8 +70,6 @@ export const CartScreen: FC<AppStackScreenProps<"Cart">> = ({ navigation }) => {
     },
     [selectMode, toggleSelectMode, theme.colors.tint, themed],
   );
-
-  const currency = cart?.Currency ?? "";
 
   // ========== EVENTS
   const saveQuantity = useCallback(
@@ -383,7 +383,12 @@ export const CartScreen: FC<AppStackScreenProps<"Cart">> = ({ navigation }) => {
             {selectedItems.size > 0 ? `Remove Selected (${selectedItems.size})` : "Remove Selected"}
           </Button>
         ) : (
-          <Button preset="filled" style={themed($checkoutButton)}>
+          <Button
+            preset="filled"
+            style={themed($checkoutButton)}
+            disabled={!cart?.CardCode || items.length === 0}
+            onPress={() => navigation.navigate("Checkout")}
+          >
             Checkout
           </Button>
         )}

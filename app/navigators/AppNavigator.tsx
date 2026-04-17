@@ -10,6 +10,7 @@ import Config from "@/config";
 import { useAuth } from "@/contexts";
 import { CartItemEditScreen } from "@/screens/CartItemEditScreen";
 import { CartScreen } from "@/screens/CartScreen";
+import { CheckoutScreen } from "@/screens/CheckoutScreen";
 import { CustomerSelectScreen } from "@/screens/CustomerSelectScreen";
 import { ErrorBoundary } from "@/screens/ErrorScreen/ErrorBoundary";
 import { useAppTheme } from "@/theme/context";
@@ -48,6 +49,7 @@ const AppStack = () => {
           <Stack.Screen name="MainTabs" component={MainTabNavigator} />
           <Stack.Screen name="Cart" component={CartScreen} />
           <Stack.Screen name="CartItemEdit" component={CartItemEditScreen} />
+          <Stack.Screen name="Checkout" component={CheckoutScreen} />
           <Stack.Screen name="CustomerSelect" component={CustomerSelectScreen} />
         </>
       ) : (

@@ -45,6 +45,7 @@ export type AppStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>;
   Cart: undefined;
   CartItemEdit: { item: CartItem };
+  Checkout: undefined;
   CustomerSelect: { eventName: string };
   // 🔥 Your screens go here
   // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST

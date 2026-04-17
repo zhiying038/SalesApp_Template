@@ -101,25 +101,16 @@ export type CartItem = {
   DiscountAmount: number;
   DiscountPercent: number;
   DiscountSource: string;
-  DiscountedUnitPrice: number;
-  EffectiveDiscount: number;
   FOC?: boolean;
   ItemCode: string;
-  ItemGroup: string;
   ItemName: string;
-  LineGrossAmount: number;
-  LineSubtotal: number;
   LineTotal: number;
-  OriginalAmount: number;
   Remarks?: string;
   ShipDate?: string;
-  StockAvailable: number;
-  StockOnHand: number;
   Quantity: number;
   UnitPrice: number;
   VatGroup?: string | null;
   VatSum: number;
-  TaxRate?: number;
 };
 
 export type ItemGroup = {
@@ -128,11 +119,41 @@ export type ItemGroup = {
 };
 
 export type BusinessPartner = {
+  BillingAddresses?: CustomerAddress[];
   CardCode: string;
   CardName: string;
   Balance: number;
   OrdersBal: number;
   ListName: string;
+  Email?: string;
+  Phone1?: string;
+  Phone2?: string;
+  Cellular?: string;
+  ContactPersons?: CustomerContact[];
+  ShippingAddresses?: CustomerAddress[];
+};
+
+export type CustomerContact = {
+  Name: string;
+  Position?: string;
+  Email?: string;
+  Phone?: string;
+  Mobile?: string;
+  IsDefault?: boolean;
+};
+
+export type AddressType = "Ship" | "Bill";
+
+export type CustomerAddress = {
+  AddressName: string;
+  AddressType: AddressType;
+  Street?: string;
+  Block?: string;
+  City?: string;
+  State?: string;
+  ZipCode?: string;
+  Country?: string;
+  IsDefault?: boolean;
 };
 
 /**

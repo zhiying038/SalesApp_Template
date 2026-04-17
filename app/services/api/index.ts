@@ -154,6 +154,19 @@ export class Api {
     return { kind: "ok", result: response.data ?? null };
   }
 
+  async getCustomer(
+    cardCode: string,
+  ): Promise<{ kind: "ok"; result: BusinessPartner } | ApiProblem> {
+    const response: ApiResponse<BusinessPartner, ApiError> = await this.apisauce.get(
+      "/api/v1/Customer",
+      { cardCode },
+    );
+
+    if (!response.ok) return this.handleError(response);
+
+    return { kind: "ok", result: response.data as BusinessPartner };
+  }
+
   async getPaginatedCustomers(
     size = 50,
     page = 1,
