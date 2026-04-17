@@ -15,6 +15,7 @@ import type {
   ApiConfig,
   ApiError,
   ApiProblem,
+  BusinessPartner,
   Cart,
   CartInput,
   DashboardSummary,
@@ -151,6 +152,21 @@ export class Api {
     if (!response.ok) return this.handleError(response);
 
     return { kind: "ok", result: response.data ?? null };
+  }
+
+  async getPaginatedCustomers(
+    size = 50,
+    page = 1,
+    search?: string,
+  ): Promise<{ kind: "ok"; result: PaginatedItem<BusinessPartner> } | ApiProblem> {
+    const response: ApiResponse<PaginatedItem<BusinessPartner>, ApiError> = await this.apisauce.get(
+      "/api/v1/Customer/All",
+      { search, size, page },
+    );
+
+    if (!response.ok) return this.handleError(response);
+
+    return { kind: "ok", result: response.data as PaginatedItem<BusinessPartner> };
   }
 
   async addToCart(input: CartInput): Promise<{ kind: "ok" } | ApiProblem> {

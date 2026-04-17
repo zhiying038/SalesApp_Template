@@ -1,5 +1,6 @@
 export * from "./CartScreen";
 export * from "./CatalogScreen";
+export * from "./CustomerSelectScreen";
 export * from "./ItemDetailScreen";
 export * from "./ItemStockScreen";
 export * from "./ItemPricingScreen";

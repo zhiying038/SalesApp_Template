@@ -70,7 +70,8 @@ export type ItemStock = {
 
 export type Cart = {
   Id: string;
-  BPDiscountPercent: number;
+  BPDiscPrcnt: number;
+  BPDiscAmount: number;
   CardCode: string;
   CardName: string;
   CreatedAt: string;
@@ -126,6 +127,14 @@ export type CartItem = {
 export type ItemGroup = {
   ItmsGrpCod: number;
   ItmsGrpNam: string;
+};
+
+export type BusinessPartner = {
+  CardCode: string;
+  CardName: string;
+  Balance: number;
+  OrdersBal: number;
+  ListName: string;
 };
 
 /**

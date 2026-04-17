@@ -9,6 +9,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Config from "@/config";
 import { useAuth } from "@/contexts";
 import { CartScreen } from "@/screens/CartScreen";
+import { CustomerSelectScreen } from "@/screens/CustomerSelectScreen";
 import { ErrorBoundary } from "@/screens/ErrorScreen/ErrorBoundary";
 import { useAppTheme } from "@/theme/context";
 import { AuthNavigator } from "./AuthNavigator";
@@ -45,6 +46,7 @@ const AppStack = () => {
         <>
           <Stack.Screen name="MainTabs" component={MainTabNavigator} />
           <Stack.Screen name="Cart" component={CartScreen} />
+          <Stack.Screen name="CustomerSelect" component={CustomerSelectScreen} />
         </>
       ) : (
         <Stack.Screen name="Auth" component={AuthNavigator} />
