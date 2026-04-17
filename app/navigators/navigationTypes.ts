@@ -6,7 +6,7 @@ import {
   NavigatorScreenParams,
 } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { ItemMaster, ItemPriceList, ItemStock } from "@/services/api";
+import type { CartItem, ItemMaster, ItemPriceList, ItemStock } from "@/services/api";
 
 // Catalog Stack Navigator types
 export type CatalogStackParamList = {
@@ -44,6 +44,7 @@ export type AppStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   MainTabs: NavigatorScreenParams<MainTabParamList>;
   Cart: undefined;
+  CartItemEdit: { item: CartItem };
   CustomerSelect: { eventName: string };
   // 🔥 Your screens go here
   // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST

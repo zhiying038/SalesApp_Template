@@ -84,8 +84,6 @@ export type Cart = {
   Rounding: number;
   Subtotal: number;
   TotalBeforeDiscount: number;
-  TotalBPDiscount: number;
-  TotalDiscount: number;
   TotalTaxAmount: number;
   UserId: number;
   UpdatedAt: string;

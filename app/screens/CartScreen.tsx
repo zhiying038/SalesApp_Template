@@ -32,17 +32,41 @@ export const CartScreen: FC<AppStackScreenProps<"Cart">> = ({ navigation }) => {
   const [savingItems, setSavingItems] = useState<Set<string>>(new Set());
 
   const [breakdownVisible, setBreakdownVisible] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
   const event = useEvent();
   const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  const toggleSelectMode = useCallback(() => {
+    setSelectMode((prev) => {
+      if (prev) setSelectedItems(new Set());
+      return !prev;
+    });
+  }, []);
 
   useHeader(
     {
       title: "Cart",
       leftIcon: "caretLeft",
       onLeftPress: () => navigation.goBack(),
+      RightActionComponent: (
+        <Pressable
+          onPress={toggleSelectMode}
+          hitSlop={8}
+          style={themed($headerAction)}
+          accessibilityRole="button"
+          accessibilityLabel={selectMode ? "Cancel selection" : "Select items"}
+        >
+          <Ionicons
+            name={selectMode ? "close" : "checkbox-outline"}
+            size={24}
+            color={theme.colors.tint}
+          />
+        </Pressable>
+      ),
     },
-    [],
+    [selectMode, toggleSelectMode, theme.colors.tint, themed],
   );
 
   const currency = cart?.Currency ?? "";
@@ -57,7 +81,6 @@ export const CartScreen: FC<AppStackScreenProps<"Cart">> = ({ navigation }) => {
           newQty === 0
             ? cart.Items.filter((x) => x.ItemCode !== itemCode)
             : cart.Items.map((x) => (x.ItemCode === itemCode ? { ...x, Quantity: newQty } : x));
-
         const res = await api.addToCart({ ...cart, Items: updatedItems });
         if (res.kind !== "ok") throw new Error(res.message);
         await fetchCart();
@@ -92,6 +115,30 @@ export const CartScreen: FC<AppStackScreenProps<"Cart">> = ({ navigation }) => {
     [saveQuantity],
   );
 
+  const toggleSelection = useCallback((itemCode: string) => {
+    setSelectedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemCode)) next.delete(itemCode);
+      else next.add(itemCode);
+      return next;
+    });
+  }, []);
+
+  const removeSelected = useCallback(async () => {
+    if (!cart || selectedItems.size === 0) return;
+    try {
+      const updatedItems = cart.Items.filter((x) => !selectedItems.has(x.ItemCode));
+      const res = await api.addToCart({ ...cart, Items: updatedItems });
+      if (res.kind !== "ok") throw new Error(res.message);
+      await fetchCart();
+      setSelectedItems(new Set());
+      setSelectMode(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : JSON.stringify(error);
+      Alert.alert("Error", message);
+    }
+  }, [cart, selectedItems]);
+
   const onSelectCustomer = useCallback(
     async (customer: BusinessPartner) => {
       if (!cart) return;
@@ -100,7 +147,6 @@ export const CartScreen: FC<AppStackScreenProps<"Cart">> = ({ navigation }) => {
           ...cart,
           CardCode: customer.CardCode,
           CardName: customer.CardName,
-          Items: cart.Items,
         });
         if (res.kind !== "ok") throw new Error(res.message);
         await fetchCart();
@@ -137,69 +183,98 @@ export const CartScreen: FC<AppStackScreenProps<"Cart">> = ({ navigation }) => {
     ({ item }) => {
       const qty = quantities[item.ItemCode] ?? item.Quantity;
       const currency = cart?.Currency ?? item.Currency ?? "";
+      const isSelected = selectedItems.has(item.ItemCode);
 
       return (
-        <View style={themed($itemContainer)}>
-          <Text size="xxs" numberOfLines={2}>
-            {item.ItemName}
-          </Text>
-          <Text size="xxs" style={$styles.dimText} numberOfLines={1}>
-            {item.ItemCode}
-          </Text>
-
-          <Flex.Row gutter={8} align="end" style={themed($priceContainer)}>
-            <Flex.Col flex="1">
-              <Text size="xxs" style={$styles.dimText}>
-                Unit Price: {currency} {item.UnitPrice.toFixed(2)}
-              </Text>
-              {item.DiscountPercent > 0 && (
-                <Text size="xxs" style={$styles.dimText}>
-                  Price After Discount: {currency}{" "}
-                  {(item.UnitPrice - item.DiscountAmount).toFixed(2)}
-                </Text>
-              )}
-              <Text size="xs" weight="bold" style={{ color: theme.colors.tint }}>
-                {currency} {item.LineTotal.toFixed(2)}
-              </Text>
-            </Flex.Col>
-            <Flex.Col>
-              <Flex.Row align="center" gutter={4}>
-                <Flex.Col>
-                  <Pressable
-                    style={themed($qtyBtn)}
-                    onPress={() => handleQuantityChange(item.ItemCode, Math.max(0, qty - 1))}
-                  >
-                    <Ionicons name="remove" size={14} color={theme.colors.text} />
-                  </Pressable>
-                </Flex.Col>
-                <Flex.Col>
-                  <TextInput
-                    selectTextOnFocus
-                    keyboardType="number-pad"
-                    value={String(qty)}
-                    style={themed($qtyInput)}
-                    onChangeText={(text) => {
-                      const num = parseInt(text, 10);
-                      const finalNum = Number.isNaN(num) || num < 0 ? 0 : num;
-                      handleQuantityChange(item.ItemCode, finalNum);
-                    }}
+        <Pressable
+          style={themed($itemContainer)}
+          onPress={
+            selectMode
+              ? () => toggleSelection(item.ItemCode)
+              : () => navigation.navigate("CartItemEdit", { item })
+          }
+        >
+          <Flex.Row gutter={8} align="start">
+            {selectMode && (
+              <Flex.Col>
+                <Pressable
+                  onPress={() => toggleSelection(item.ItemCode)}
+                  hitSlop={8}
+                  style={themed($checkboxHitbox)}
+                >
+                  <Ionicons
+                    name={isSelected ? "checkbox" : "square-outline"}
+                    size={22}
+                    color={isSelected ? theme.colors.tint : theme.colors.textDim}
                   />
+                </Pressable>
+              </Flex.Col>
+            )}
+            <Flex.Col flex="1">
+              <Text size="xxs" numberOfLines={2}>
+                {item.ItemName}
+              </Text>
+              <Text size="xxs" style={$styles.dimText} numberOfLines={1}>
+                {item.ItemCode}
+              </Text>
+
+              <Flex.Row gutter={8} align="end" style={themed($priceContainer)}>
+                <Flex.Col flex="1">
+                  <Text size="xxs" style={$styles.dimText}>
+                    Unit Price: {currency} {item.UnitPrice.toFixed(2)}
+                  </Text>
+                  {item.DiscountPercent > 0 && (
+                    <Text size="xxs" style={$styles.dimText}>
+                      Price After Discount: {currency}{" "}
+                      {(item.UnitPrice - item.DiscountAmount).toFixed(2)}
+                    </Text>
+                  )}
+                  <Text size="xs" weight="bold" style={{ color: theme.colors.tint }}>
+                    {currency} {item.LineTotal.toFixed(2)}
+                  </Text>
                 </Flex.Col>
-                <Flex.Col>
-                  <Pressable
-                    style={themed($qtyBtn)}
-                    onPress={() => handleQuantityChange(item.ItemCode, qty + 1)}
-                  >
-                    <Ionicons name="add" size={14} color={theme.colors.text} />
-                  </Pressable>
-                </Flex.Col>
+                {!selectMode && (
+                  <Flex.Col>
+                    <Flex.Row align="center" gutter={4}>
+                      <Flex.Col>
+                        <Pressable
+                          style={themed($qtyBtn)}
+                          onPress={() => handleQuantityChange(item.ItemCode, Math.max(0, qty - 1))}
+                        >
+                          <Ionicons name="remove" size={14} color={theme.colors.text} />
+                        </Pressable>
+                      </Flex.Col>
+                      <Flex.Col>
+                        <TextInput
+                          selectTextOnFocus
+                          keyboardType="number-pad"
+                          value={String(qty)}
+                          style={themed($qtyInput)}
+                          onChangeText={(text) => {
+                            const num = parseInt(text, 10);
+                            const finalNum = Number.isNaN(num) || num < 0 ? 0 : num;
+                            handleQuantityChange(item.ItemCode, finalNum);
+                          }}
+                        />
+                      </Flex.Col>
+                      <Flex.Col>
+                        <Pressable
+                          style={themed($qtyBtn)}
+                          onPress={() => handleQuantityChange(item.ItemCode, qty + 1)}
+                        >
+                          <Ionicons name="add" size={14} color={theme.colors.text} />
+                        </Pressable>
+                      </Flex.Col>
+                    </Flex.Row>
+                  </Flex.Col>
+                )}
               </Flex.Row>
             </Flex.Col>
           </Flex.Row>
-        </View>
+        </Pressable>
       );
     },
-    [quantities, savingItems, handleQuantityChange, cart?.Currency, theme.colors, themed],
+    [quantities, savingItems, cart?.Currency, theme.colors, selectMode, selectedItems],
   );
 
   if (isLoading) {
@@ -298,9 +373,20 @@ export const CartScreen: FC<AppStackScreenProps<"Cart">> = ({ navigation }) => {
           </Flex.Col>
         </Flex.Row>
 
-        <Button preset="filled" style={themed($checkoutButton)}>
-          Checkout
-        </Button>
+        {selectMode ? (
+          <Button
+            preset="filled"
+            style={themed($checkoutButton)}
+            disabled={selectedItems.size === 0}
+            onPress={removeSelected}
+          >
+            {selectedItems.size > 0 ? `Remove Selected (${selectedItems.size})` : "Remove Selected"}
+          </Button>
+        ) : (
+          <Button preset="filled" style={themed($checkoutButton)}>
+            Checkout
+          </Button>
+        )}
       </View>
 
       <BreakdownSummary
@@ -334,6 +420,17 @@ const $itemContainer: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
 
 const $priceContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   marginTop: spacing.xs,
+});
+
+const $checkboxHitbox: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingRight: spacing.xxs,
+});
+
+const $headerAction: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  height: "100%",
+  paddingHorizontal: spacing.md,
+  alignItems: "center",
+  justifyContent: "center",
 });
 
 const $qtyBtn: ThemedStyle<ViewStyle> = ({ colors }) => ({
