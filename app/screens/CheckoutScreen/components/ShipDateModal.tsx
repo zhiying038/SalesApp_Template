@@ -1,13 +1,28 @@
-import { FC } from "react";
-import { Pressable, TextInput, TextStyle, View, ViewStyle } from "react-native";
+import { FC, useEffect, useState } from "react";
+import { Platform, Pressable, ViewStyle } from "react-native";
+import DateTimePicker, {
+  DateTimePickerAndroid,
+  type DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { addDays, format, startOfDay } from "date-fns";
-import { BottomSheetModal, ModalActionBar, Text } from "@/components";
+import { BottomSheetModal, Button, Chip, Flex, Text } from "@/components";
 import type { CartItem } from "@/services/api";
 import { useAppTheme } from "@/theme/context";
 import { $styles } from "@/theme/styles";
 import type { ThemedStyle } from "@/theme/types";
-import { SHIP_DATE_FORMAT, SHIP_DATE_PRESETS } from "./constants";
-import { $modalTextInput } from "./styles";
+import { parseShipDate } from "../helpers";
+
+export const SHIP_DATE_FORMAT = "yyyy-MM-dd";
+export const SHIP_DATE_DISPLAY_FORMAT = "EEE, dd MMM yyyy";
+
+export const SHIP_DATE_PRESETS = [
+  { label: "Today", offsetDays: 0 },
+  { label: "Tomorrow", offsetDays: 1 },
+  { label: "+3d", offsetDays: 3 },
+  { label: "+7d", offsetDays: 7 },
+  { label: "+14d", offsetDays: 14 },
+  { label: "+30d", offsetDays: 30 },
+];
 
 type Props = {
   item: CartItem | null;
@@ -29,6 +44,37 @@ export const ShipDateModal: FC<Props> = ({
   onSave,
 }) => {
   const { themed, theme } = useAppTheme();
+  const [isIosPickerOpen, setIsIosPickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (item === null) setIsIosPickerOpen(false);
+  }, [item]);
+
+  const selectedDate = parseShipDate(draft);
+  const today = startOfDay(new Date());
+  const pickerValue = selectedDate ?? today;
+
+  const commitDate = (date: Date) => {
+    onDraftChange(format(startOfDay(date), SHIP_DATE_FORMAT));
+  };
+
+  const onDateChange = (event: DateTimePickerEvent, date?: Date) => {
+    if (event.type === "set" && date) commitDate(date);
+  };
+
+  const openPicker = () => {
+    if (isSaving) return;
+    if (Platform.OS === "android") {
+      DateTimePickerAndroid.open({
+        value: pickerValue,
+        mode: "date",
+        minimumDate: today,
+        onChange: onDateChange,
+      });
+      return;
+    }
+    setIsIosPickerOpen((prev) => !prev);
+  };
 
   return (
     <BottomSheetModal visible={item !== null} onClose={onClose}>
@@ -41,53 +87,57 @@ export const ShipDateModal: FC<Props> = ({
         </Text>
       ) : null}
 
-      <View style={themed($presetRow)}>
-        {SHIP_DATE_PRESETS.map((preset) => {
+      <Flex.Row wrap gutter={4}>
+        {SHIP_DATE_PRESETS.map((preset, i) => {
           const presetValue = format(
             addDays(startOfDay(new Date()), preset.offsetDays),
             SHIP_DATE_FORMAT,
           );
-          const isActive = draft === presetValue;
           return (
-            <Pressable
-              key={preset.label}
-              onPress={() => onPickPreset(preset.offsetDays)}
-              style={themed([$presetChip, isActive && $presetChipActive])}
-              disabled={isSaving}
-            >
-              <Text
-                size="xxs"
-                weight="medium"
-                style={themed(isActive ? $presetTextActive : $presetText)}
+            <Flex.Col key={i}>
+              <Chip
+                disabled={isSaving}
+                selected={draft === presetValue}
+                onPress={() => onPickPreset(preset.offsetDays)}
               >
                 {preset.label}
-              </Text>
-            </Pressable>
+              </Chip>
+            </Flex.Col>
           );
         })}
-      </View>
+      </Flex.Row>
 
-      <TextInput
-        value={draft}
-        onChangeText={onDraftChange}
-        editable={!isSaving}
-        placeholder="YYYY-MM-DD"
-        placeholderTextColor={theme.colors.textDim}
-        style={themed($modalTextInput)}
-        keyboardType="numbers-and-punctuation"
-        autoCapitalize="none"
-        autoCorrect={false}
-        maxLength={10}
-      />
+      <Pressable
+        onPress={openPicker}
+        disabled={isSaving}
+        style={themed([$dateField, isIosPickerOpen && $dateFieldActive])}
+      >
+        <Text
+          size="xxs"
+          style={{
+            color: selectedDate ? theme.colors.text : theme.colors.textDim,
+          }}
+        >
+          {selectedDate ? format(selectedDate, SHIP_DATE_DISPLAY_FORMAT) : "Select a date"}
+        </Text>
+      </Pressable>
 
-      <ModalActionBar
-        onCancel={onClose}
-        onSave={onSave}
-        isSaving={isSaving}
-        leading={
+      {Platform.OS === "ios" && isIosPickerOpen ? (
+        <DateTimePicker
+          mode="date"
+          display="inline"
+          minimumDate={today}
+          value={pickerValue}
+          onValueChange={(_e, d) => commitDate(d)}
+          themeVariant={theme.isDark ? "dark" : "light"}
+        />
+      ) : null}
+
+      <Flex.Row align="center" justify="between">
+        <Flex.Col flex="1">
           <Pressable
-            onPress={() => onDraftChange("")}
             hitSlop={8}
+            onPress={() => onDraftChange("")}
             disabled={isSaving || draft.length === 0}
           >
             <Text
@@ -99,36 +149,33 @@ export const ShipDateModal: FC<Props> = ({
               Clear
             </Text>
           </Pressable>
-        }
-      />
+        </Flex.Col>
+        <Flex.Row gutter={8}>
+          <Flex.Col>
+            <Button preset="default" disabled={isSaving} onPress={onClose}>
+              Cancel
+            </Button>
+          </Flex.Col>
+          <Flex.Col>
+            <Button preset="filled" disabled={isSaving} onPress={onSave}>
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          </Flex.Col>
+        </Flex.Row>
+      </Flex.Row>
     </BottomSheetModal>
   );
 };
 
-const $presetRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  flexDirection: "row",
-  flexWrap: "wrap",
-  gap: spacing.xxs,
-});
-
-const $presetChip: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  paddingVertical: spacing.xxs,
-  paddingHorizontal: spacing.sm,
-  borderRadius: 999,
+const $dateField: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
   borderWidth: 1,
   borderColor: colors.palette.neutral300,
+  borderRadius: spacing.xs,
+  paddingVertical: spacing.sm,
+  paddingHorizontal: spacing.sm,
   backgroundColor: colors.palette.neutral100,
 });
 
-const $presetChipActive: ThemedStyle<ViewStyle> = ({ colors }) => ({
-  backgroundColor: colors.tint,
+const $dateFieldActive: ThemedStyle<ViewStyle> = ({ colors }) => ({
   borderColor: colors.tint,
-});
-
-const $presetText: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.text,
-});
-
-const $presetTextActive: ThemedStyle<TextStyle> = ({ colors }) => ({
-  color: colors.palette.neutral100,
 });

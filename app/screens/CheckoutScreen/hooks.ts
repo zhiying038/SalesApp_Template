@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 import { addDays, format, startOfDay } from "date-fns";
-import { useCart } from "@/contexts/cartContext";
+import { useCart } from "@/contexts";
 import { api, BusinessPartner, Cart, CartItem } from "@/services/api";
-import { SHIP_DATE_FORMAT } from "./constants";
 import { parseShipDate } from "./helpers";
 
 export function useCustomerDetails(cardCode: string | undefined) {
@@ -102,7 +101,7 @@ export function useShipDateEditor() {
   const open = useCallback((item: CartItem) => {
     setEditorItem(item);
     const parsed = parseShipDate(item.ShipDate);
-    setDraft(parsed ? format(parsed, SHIP_DATE_FORMAT) : "");
+    setDraft(parsed ? format(parsed, "yyyy-MM-dd") : "");
   }, []);
 
   const close = useCallback(() => {
@@ -113,7 +112,7 @@ export function useShipDateEditor() {
 
   const pickPreset = useCallback((offsetDays: number) => {
     const date = addDays(startOfDay(new Date()), offsetDays);
-    setDraft(format(date, SHIP_DATE_FORMAT));
+    setDraft(format(date, "yyyy-MM-dd"));
   }, []);
 
   const save = useCallback(async () => {
@@ -128,7 +127,7 @@ export function useShipDateEditor() {
         Alert.alert("Invalid Date", "Please enter a valid date in YYYY-MM-DD format.");
         return;
       }
-      nextValue = format(parsed, SHIP_DATE_FORMAT);
+      nextValue = format(parsed, "yyyy-MM-dd");
     }
     if ((editorItem.ShipDate ?? "") === (nextValue ?? "")) {
       setEditorItem(null);

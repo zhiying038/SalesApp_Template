@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { FlashList, ListRenderItem } from "@shopify/flash-list";
 import { BreakdownSummary, Button, Flex, Screen, Text } from "@/components";
 import { Divider } from "@/components/Divider";
-import { useCart } from "@/contexts/cartContext";
+import { useCart } from "@/contexts";
 import { useEvent } from "@/hooks";
 import type { AppStackScreenProps } from "@/navigators/navigationTypes";
 import { api, BusinessPartner, CartItem } from "@/services/api";

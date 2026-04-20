@@ -13,7 +13,7 @@ import {
   SearchField,
   Text,
 } from "@/components";
-import { useCart } from "@/contexts/cartContext";
+import { useCart } from "@/contexts";
 import type { CatalogStackScreenProps } from "@/navigators/navigationTypes";
 import { api, ItemGroup, ItemMaster } from "@/services/api";
 import { useAppTheme } from "@/theme/context";

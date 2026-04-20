@@ -24,13 +24,12 @@ import * as Linking from "expo-linking";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { initialWindowMetrics, SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AuthProvider, CartProvider } from "./contexts";
 import { initI18n } from "./i18n";
 import { AppNavigator } from "./navigators/AppNavigator";
 import { useNavigationPersistence } from "./navigators/navigationUtilities";
 import { ThemeProvider } from "./theme/context";
 import { customFontsToLoad } from "./theme/typography";
-import { AuthProvider } from "./contexts/authContext";
-import { CartProvider } from "./contexts/cartContext";
 import { loadDateFnsLocale } from "./utils/formatDate";
 import * as storage from "./utils/storage";
 
@@ -100,11 +99,11 @@ export function App() {
         <ThemeProvider>
           <AuthProvider>
             <CartProvider>
-            <AppNavigator
-              linking={linking}
-              initialState={initialNavigationState}
-              onStateChange={onNavigationStateChange}
-            />
+              <AppNavigator
+                linking={linking}
+                initialState={initialNavigationState}
+                onStateChange={onNavigationStateChange}
+              />
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

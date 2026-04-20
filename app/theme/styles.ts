@@ -19,4 +19,5 @@ export const $styles = {
   dimText: {
     color: colors.textDim,
   } as TextStyle,
+  textCenter: { textAlign: "center" } as TextStyle,
 };

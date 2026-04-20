@@ -3,9 +3,9 @@ import { Alert, View, ViewStyle } from "react-native";
 import { Controller, useForm } from "react-hook-form";
 import { Button, Screen, Text, TextField } from "@/components";
 import { Switch } from "@/components/Toggle/Switch";
-import { useCart } from "@/contexts/cartContext";
+import { useCart } from "@/contexts";
 import type { AppStackScreenProps } from "@/navigators/navigationTypes";
-import { api, buildCartInput, CartItem } from "@/services/api";
+import { api, CartItem } from "@/services/api";
 import { useAppTheme } from "@/theme/context";
 import { $styles } from "@/theme/styles";
 import type { ThemedStyle } from "@/theme/types";
@@ -46,7 +46,7 @@ export const CartItemEditScreen: FC<AppStackScreenProps<"CartItemEdit">> = ({
         DiscountPercent: values.DiscountPercent,
       };
       const updatedItems = cart.Items.map((x) => (x.Id === item.Id ? updatedItem : x));
-      const response = await api.addToCart(buildCartInput(cart, updatedItems));
+      const response = await api.addToCart({ ...cart, Items: updatedItems });
       if (response.kind !== "ok") throw new Error(response.message);
       await fetchCart();
       navigation.goBack();

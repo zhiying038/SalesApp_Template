@@ -1,4 +1,4 @@
-import type { TextStyle, ViewStyle } from "react-native";
+import type { ViewStyle } from "react-native";
 import type { ThemedStyle } from "@/theme/types";
 
 export const $screen: ThemedStyle<ViewStyle> = ({ spacing }) => ({
@@ -7,23 +7,8 @@ export const $screen: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   gap: spacing.md,
 });
 
-export const $infoRow: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginTop: spacing.xxs,
-});
-
 export const $labelCol: ThemedStyle<ViewStyle> = () => ({
   width: 72,
-});
-
-export const $modalTextInput: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
-  borderWidth: 1,
-  borderColor: colors.palette.neutral300,
-  borderRadius: spacing.xs,
-  paddingVertical: spacing.sm,
-  paddingHorizontal: spacing.sm,
-  color: colors.text,
-  backgroundColor: colors.palette.neutral100,
-  fontSize: 14,
 });
 
 export const $emptyContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({

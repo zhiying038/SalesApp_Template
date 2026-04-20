@@ -1,6 +1,5 @@
 import { format, isValid, parseISO } from "date-fns";
-import type { CustomerAddress, CustomerContact } from "@/services/api";
-import { SHIP_DATE_DISPLAY_FORMAT } from "./constants";
+import type { Cart, CustomerAddress, CustomerContact } from "@/services/api";
 
 export const formatAddress = (address?: CustomerAddress): string => {
   if (!address) return "";
@@ -37,5 +36,18 @@ export const parseShipDate = (value?: string | null): Date | null => {
 export const formatShipDate = (value?: string | null): string => {
   const parsed = parseShipDate(value);
   if (!parsed) return "";
-  return format(parsed, SHIP_DATE_DISPLAY_FORMAT);
+  return format(parsed, "EEE, dd MMM yyyy");
+};
+
+export const toPayload = (cart: Cart) => {
+  return {
+    Lines: cart.Items.map((x) => {
+      return {
+        ItemCode: x.ItemCode,
+        ItemName: x.ItemName,
+        Quantity: x.Quantity,
+        UnitPrice: x.UnitPrice,
+      };
+    }),
+  };
 };
