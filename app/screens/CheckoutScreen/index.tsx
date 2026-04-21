@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useMemo, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, TextStyle, View, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -18,7 +18,7 @@ import { $styles } from "@/theme/styles";
 import type { ThemedStyle } from "@/theme/types";
 import { formatAddress, formatDate } from "@/utils";
 import { useHeader } from "@/utils/useHeader";
-import { RemarksModal, ShipDateModal } from "./components";
+import { AddressPickerModal, RemarksModal, ShipDateModal } from "./components";
 import { useRemarksEditor, useShipDateEditor } from "./hooks";
 
 export const DOCUMENT_TYPE_OPTIONS = [
@@ -35,6 +35,9 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [documentType, setDocumentType] = useState<string>("order");
   const [customer, setCustomer] = useState<BusinessPartner | null>(null);
+  const [addressPickerType, setAddressPickerType] = useState<string>("");
+  const [shippingAddressName, setShippingAddressName] = useState<string | undefined>();
+  const [billingAddressName, setBillingAddressName] = useState<string | undefined>();
 
   const remarks = useRemarksEditor();
   const shipDate = useShipDateEditor();
@@ -42,17 +45,46 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
   const selectedDocumentOption =
     DOCUMENT_TYPE_OPTIONS.find((o) => o.value === documentType) ?? DOCUMENT_TYPE_OPTIONS[0];
 
+  const shippingAddresses = useMemo(
+    () => customer?.ShippingAddresses ?? [],
+    [customer?.ShippingAddresses],
+  );
+
+  const billingAddresses = useMemo(
+    () => customer?.BillingAddresses ?? [],
+    [customer?.BillingAddresses],
+  );
+
   const shippingAddress = useMemo(() => {
-    const addresses = customer?.ShippingAddresses;
-    if (!addresses || addresses.length === 0) return undefined;
-    return addresses.find((a) => a.IsDefault) ?? addresses[0];
-  }, [customer?.ShippingAddresses]);
+    if (shippingAddresses.length === 0) return undefined;
+    if (shippingAddressName) {
+      const match = shippingAddresses.find((a) => a.Address === shippingAddressName);
+      if (match) return match;
+    }
+    return shippingAddresses.find((a) => a.IsDefault) ?? shippingAddresses[0];
+  }, [shippingAddresses, shippingAddressName]);
 
   const billingAddress = useMemo(() => {
-    const addresses = customer?.BillingAddresses;
-    if (!addresses || addresses.length === 0) return undefined;
-    return addresses.find((a) => a.IsDefault) ?? addresses[0];
-  }, [customer?.BillingAddresses]);
+    if (billingAddresses.length === 0) return undefined;
+    if (billingAddressName) {
+      const match = billingAddresses.find((a) => a.Address === billingAddressName);
+      if (match) return match;
+    }
+    return billingAddresses.find((a) => a.IsDefault) ?? billingAddresses[0];
+  }, [billingAddresses, billingAddressName]);
+
+  // Latch the active picker type so picker content stays stable during the
+  // sheet's close animation (prevents a flicker when addressPickerType flips
+  // to null but the sheet is still animating out).
+  const lastPickerTypeRef = useRef<string>("Ship");
+  if (addressPickerType !== null) lastPickerTypeRef.current = addressPickerType;
+  const displayPickerType = lastPickerTypeRef.current;
+
+  const pickerAddresses = displayPickerType === "Ship" ? shippingAddresses : billingAddresses;
+  const pickerSelectedName =
+    displayPickerType === "Ship" ? shippingAddress?.Address : billingAddress?.Address;
+  const pickerTitle =
+    displayPickerType === "Ship" ? "Select Shipping Address" : "Select Billing Address";
 
   const primaryContact = useMemo(() => {
     if (!customer?.ContactPersons || customer.ContactPersons.length === 0) return undefined;
@@ -84,6 +116,17 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const onOpenAddressPicker = (type: string, addresses: unknown[]) => {
+    if (addresses.length <= 1) return;
+    setAddressPickerType(type);
+  };
+
+  const onSelectAddress = (address: { Address: string }) => {
+    if (addressPickerType === "Ship") setShippingAddressName(address.Address);
+    else if (addressPickerType === "Bill") setBillingAddressName(address.Address);
+    setAddressPickerType("");
   };
 
   const onPlaceOrder = useCallback(async () => {
@@ -157,28 +200,52 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
             <Text size="xxs" weight="medium">
               {primaryContact.Name}
             </Text>
-            <Text size="xxs">Phone: {primaryContact.Mobile}</Text>
+            <Text size="xxs">Phone: {primaryContact.Tel1}</Text>
           </View>
         ) : (
           <Text>-</Text>
         )}
       </SectionCard>
 
-      <SectionCard
-        isLoading={isLoading}
-        title="Shipping Address"
-        trailing={shippingAddress?.AddressName}
+      <Pressable
+        disabled={isLoading || shippingAddresses.length <= 1}
+        onPress={() => onOpenAddressPicker("Ship", shippingAddresses)}
       >
-        <Text size="xxs">{!!shippingAddress ? formatAddress(shippingAddress) : "-"}</Text>
-      </SectionCard>
+        <SectionCard
+          isLoading={isLoading}
+          title="Shipping Address"
+          trailing={
+            shippingAddresses.length > 1 ? (
+              <Ionicons name="chevron-down" size={14} color={theme.colors.textDim} />
+            ) : null
+          }
+        >
+          <Text size="xxs" weight="medium">
+            {shippingAddress?.Address}
+          </Text>
+          <Text size="xxs">{!!shippingAddress ? formatAddress(shippingAddress) : "-"}</Text>
+        </SectionCard>
+      </Pressable>
 
-      <SectionCard
-        isLoading={isLoading}
-        title="Billing Address"
-        trailing={billingAddress?.AddressName}
+      <Pressable
+        disabled={isLoading || billingAddresses.length <= 1}
+        onPress={() => onOpenAddressPicker("Bill", billingAddresses)}
       >
-        <Text size="xxs">{!!billingAddress ? formatAddress(billingAddress) : "-"}</Text>
-      </SectionCard>
+        <SectionCard
+          isLoading={isLoading}
+          title="Billing Address"
+          trailing={
+            billingAddresses.length > 1 ? (
+              <Ionicons name="chevron-down" size={14} color={theme.colors.textDim} />
+            ) : null
+          }
+        >
+          <Text size="xxs" weight="medium">
+            {billingAddress?.Address}
+          </Text>
+          <Text size="xxs">{!!billingAddress ? formatAddress(billingAddress) : "-"}</Text>
+        </SectionCard>
+      </Pressable>
 
       <SectionCard
         title="Items"
@@ -262,6 +329,15 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
       >
         {isPlacingOrder ? "Submitting..." : `Create ${selectedDocumentOption.label}`}
       </Button>
+
+      <AddressPickerModal
+        visible={addressPickerType !== null}
+        title={pickerTitle}
+        addresses={pickerAddresses}
+        selectedName={pickerSelectedName}
+        onSelect={onSelectAddress}
+        onClose={() => setAddressPickerType("")}
+      />
 
       <ShipDateModal
         item={shipDate.editorItem}

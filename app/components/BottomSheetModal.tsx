@@ -1,50 +1,69 @@
-import { FC, ReactNode } from "react";
-import { Modal, Pressable, View, ViewStyle } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { FC, ReactNode, useEffect, useRef } from "react";
+import { ViewStyle } from "react-native";
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal as GorhomBottomSheetModal,
+  BottomSheetView,
+  type BottomSheetBackdropProps,
+} from "@gorhom/bottom-sheet";
 import { useAppTheme } from "@/theme/context";
 import type { ThemedStyle } from "@/theme/types";
 
 type Props = {
   visible: boolean;
   onClose: () => void;
+  snapPoints?: (string | number)[];
   children?: ReactNode;
 };
 
-export const BottomSheetModal: FC<Props> = ({ visible, onClose, children }) => {
-  const { themed } = useAppTheme();
+export const BottomSheetModal: FC<Props> = ({ visible, onClose, snapPoints, children }) => {
+  const { themed, theme } = useAppTheme();
+  const ref = useRef<GorhomBottomSheetModal>(null);
+
+  useEffect(() => {
+    if (visible) ref.current?.present();
+    else ref.current?.dismiss();
+  }, [visible]);
+
+  const renderBackdrop = (props: BottomSheetBackdropProps) => (
+    <BottomSheetBackdrop
+      {...props}
+      appearsOnIndex={0}
+      disappearsOnIndex={-1}
+      pressBehavior="close"
+      opacity={0.4}
+    />
+  );
 
   return (
-    <Modal
-      transparent
-      visible={visible}
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onClose}
+    <GorhomBottomSheetModal
+      ref={ref}
+      snapPoints={snapPoints}
+      enableDynamicSizing={!snapPoints}
+      enablePanDownToClose
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+      onDismiss={onClose}
+      backdropComponent={renderBackdrop}
+      handleIndicatorStyle={{ backgroundColor: theme.colors.palette.neutral300 }}
+      backgroundStyle={{ backgroundColor: theme.colors.background }}
     >
-      <KeyboardAvoidingView style={themed($backdrop)} behavior="padding">
-        <Pressable style={$dismiss} onPress={onClose} />
-        <View style={themed($sheet)}>{children}</View>
-      </KeyboardAvoidingView>
-    </Modal>
+      <BottomSheetView style={themed(snapPoints ? $sheetFlex : $sheet)}>{children}</BottomSheetView>
+    </GorhomBottomSheetModal>
   );
 };
 
-const $backdrop: ThemedStyle<ViewStyle> = () => ({
-  flex: 1,
-  backgroundColor: "rgba(0,0,0,0.4)",
-  justifyContent: "flex-end",
+const $sheet: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingHorizontal: spacing.lg,
+  paddingTop: spacing.sm,
+  paddingBottom: spacing.xl,
+  gap: spacing.sm,
 });
 
-const $dismiss: ViewStyle = {
+const $sheetFlex: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   flex: 1,
-};
-
-const $sheet: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
-  backgroundColor: colors.background,
-  borderTopLeftRadius: 16,
-  borderTopRightRadius: 16,
   paddingHorizontal: spacing.lg,
-  paddingTop: spacing.md,
+  paddingTop: spacing.sm,
   paddingBottom: spacing.xl,
   gap: spacing.sm,
 });

@@ -135,21 +135,17 @@ export type BusinessPartner = {
 
 export type CustomerContact = {
   Name: string;
-  Position?: string;
-  Email?: string;
-  Phone?: string;
-  Mobile?: string;
+  E_MailL?: string;
+  Tel1?: string;
   IsDefault?: boolean;
 };
 
-export type AddressType = "Ship" | "Bill";
-
 export type CustomerAddress = {
-  AddressName: string;
-  AddressType: AddressType;
+  Address: string;
   Street?: string;
   Block?: string;
   City?: string;
+  County?: string;
   State?: string;
   ZipCode?: string;
   Country?: string;

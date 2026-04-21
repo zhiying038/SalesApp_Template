@@ -6,7 +6,9 @@
       "Bash(pnpm add:*)",
       "WebSearch",
       "Bash(node -e \"require\\('fs'\\).writeFileSync\\('D:/Projects/FT_Solutions/SalesApp_Template/app/screens/CartScreen_new.tsx', require\\('fs'\\).readFileSync\\('D:/Projects/FT_Solutions/SalesApp_Template/app/screens/CartScreen.tsx.bak'\\)\\)\")",
-      "Bash(grep -n 'actionIconContainer\\\\|$actionTextContainer' /d/Projects/FT_Solutions/SalesApp_Template/app/components/Header.tsx)"
+      "Bash(grep -n 'actionIconContainer\\\\|$actionTextContainer' /d/Projects/FT_Solutions/SalesApp_Template/app/components/Header.tsx)",
+      "Bash(pnpm compile *)",
+      "Bash(npx eslint *)"
     ]
   }
 }

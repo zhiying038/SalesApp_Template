@@ -1,5 +1,6 @@
 import { FC } from "react";
-import { TextInput, TextStyle, ViewStyle } from "react-native";
+import { TextStyle, ViewStyle } from "react-native";
+import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { BottomSheetModal, ModalActionBar, Text } from "@/components";
 import type { CartItem } from "@/services/api";
 import { useAppTheme } from "@/theme/context";
@@ -38,7 +39,7 @@ export const RemarksModal: FC<Props> = ({
         </Text>
       ) : null}
 
-      <TextInput
+      <BottomSheetTextInput
         multiline
         autoFocus
         value={draft}
