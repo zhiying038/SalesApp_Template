@@ -20,4 +20,9 @@ export const $styles = {
     color: colors.textDim,
   } as TextStyle,
   textCenter: { textAlign: "center" } as TextStyle,
+  centered: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  } as ViewStyle,
 };

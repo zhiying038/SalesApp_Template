@@ -1,42 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Alert } from "react-native";
 import { addDays, format, startOfDay } from "date-fns";
 import { useCart } from "@/contexts";
-import { api, BusinessPartner, Cart, CartItem } from "@/services/api";
-import { parseShipDate } from "./helpers";
-
-export function useCustomerDetails(cardCode: string | undefined) {
-  const [customer, setCustomer] = useState<BusinessPartner | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (!cardCode) {
-      setCustomer(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      setIsLoading(true);
-      try {
-        const res = await api.getCustomer(cardCode);
-        if (cancelled) return;
-        if (res.kind !== "ok") throw new Error(res.message);
-        setCustomer(res.result);
-      } catch (error) {
-        if (cancelled) return;
-        const message = error instanceof Error ? error.message : JSON.stringify(error);
-        Alert.alert("Error", message);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [cardCode]);
-
-  return { customer, isLoading };
-}
+import { api, Cart, CartItem } from "@/services/api";
+import { parseDate } from "@/utils";
 
 async function persistCartItemPatch(
   cart: Cart,
@@ -100,7 +67,7 @@ export function useShipDateEditor() {
 
   const open = useCallback((item: CartItem) => {
     setEditorItem(item);
-    const parsed = parseShipDate(item.ShipDate);
+    const parsed = parseDate(item.ShipDate);
     setDraft(parsed ? format(parsed, "yyyy-MM-dd") : "");
   }, []);
 
@@ -122,7 +89,7 @@ export function useShipDateEditor() {
     if (trimmed.length === 0) {
       nextValue = undefined;
     } else {
-      const parsed = parseShipDate(trimmed);
+      const parsed = parseDate(trimmed);
       if (!parsed) {
         Alert.alert("Invalid Date", "Please enter a valid date in YYYY-MM-DD format.");
         return;

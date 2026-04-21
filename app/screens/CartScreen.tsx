@@ -2,6 +2,7 @@ import { FC, useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   TextInput,
   TextStyle,
@@ -279,7 +280,7 @@ export const CartScreen: FC<AppStackScreenProps<"Cart">> = ({ navigation }) => {
 
   if (isLoading) {
     return (
-      <Screen preset="fixed" contentContainerStyle={$centered}>
+      <Screen preset="fixed" contentContainerStyle={$styles.centered}>
         <ActivityIndicator size="large" color={theme.colors.tint} />
       </Screen>
     );
@@ -394,15 +395,22 @@ export const CartScreen: FC<AppStackScreenProps<"Cart">> = ({ navigation }) => {
         )}
       </View>
 
-      <BreakdownSummary
-        currency={currency}
+      <Modal
+        transparent
+        statusBarTranslucent
         visible={breakdownVisible}
-        totalAmount={cart?.DocTotal}
-        discount={cart?.BPDiscAmount}
-        taxAmount={cart?.TotalTaxAmount}
-        subtotal={cart?.TotalBeforeDiscount}
-        onClose={() => setBreakdownVisible(false)}
-      />
+        onRequestClose={() => setBreakdownVisible(false)}
+      >
+        <Pressable style={themed($backdrop)} onPress={() => setBreakdownVisible(false)} />
+        <BreakdownSummary
+          currency={currency}
+          style={themed($sheet)}
+          totalAmount={cart?.DocTotal}
+          discount={cart?.BPDiscAmount}
+          taxAmount={cart?.TotalTaxAmount}
+          subtotal={cart?.TotalBeforeDiscount}
+        />
+      </Modal>
     </Screen>
   );
 };
@@ -483,8 +491,21 @@ const $emptyContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
   paddingHorizontal: spacing.xl,
 });
 
-const $centered: ViewStyle = {
+const $backdrop: ThemedStyle<ViewStyle> = () => ({
   flex: 1,
-  alignItems: "center",
-  justifyContent: "center",
-};
+  backgroundColor: "rgba(0,0,0,0.4)",
+});
+
+const $sheet: ThemedStyle<ViewStyle> = ({ colors, spacing }) => ({
+  position: "absolute",
+  bottom: 0,
+  left: 0,
+  right: 0,
+  backgroundColor: colors.background,
+  borderTopLeftRadius: 16,
+  borderTopRightRadius: 16,
+  paddingHorizontal: spacing.lg,
+  paddingBottom: spacing.xl,
+  paddingTop: spacing.sm,
+  gap: spacing.xs,
+});

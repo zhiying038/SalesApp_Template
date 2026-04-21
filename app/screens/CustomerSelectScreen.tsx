@@ -146,7 +146,7 @@ export const CustomerSelectScreen: FC<AppStackScreenProps<"CustomerSelect">> = (
       )}
 
       {isLoading && customers.length === 0 ? (
-        <View style={$centered}>
+        <View style={$styles.centered}>
           <ActivityIndicator size="large" color={theme.colors.tint} />
         </View>
       ) : (
@@ -158,7 +158,7 @@ export const CustomerSelectScreen: FC<AppStackScreenProps<"CustomerSelect">> = (
           keyExtractor={(item) => item.CardCode}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={$centered}>
+            <View style={$styles.centered}>
               <Text size="sm" style={themed($dimText)}>
                 No customers found
               </Text>
@@ -205,10 +205,3 @@ const $recordsCount: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
   paddingHorizontal: spacing.lg,
   paddingBottom: spacing.xs,
 });
-
-const $centered: ViewStyle = {
-  flex: 1,
-  alignItems: "center",
-  justifyContent: "center",
-  paddingTop: 64,
-};

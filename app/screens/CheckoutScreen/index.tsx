@@ -1,18 +1,25 @@
-import { FC, useCallback, useMemo, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, TextStyle, View, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Flex, Screen, SectionCard, Text } from "@/components";
-import { SegmentedButtons } from "@/components/SegmentedButtons/SegmentedButtons";
+import {
+  Button,
+  Flex,
+  Screen,
+  SectionCard,
+  Text,
+  SegmentedButtons,
+  BreakdownSummary,
+} from "@/components";
 import { useCart } from "@/contexts";
-import type { AppStackScreenProps } from "@/navigators/navigationTypes";
+import type { AppStackScreenProps } from "@/navigators";
+import { api, BusinessPartner } from "@/services/api";
 import { useAppTheme } from "@/theme/context";
 import { $styles } from "@/theme/styles";
 import type { ThemedStyle } from "@/theme/types";
+import { formatAddress, formatDate } from "@/utils";
 import { useHeader } from "@/utils/useHeader";
-import { SummaryCard, RemarksModal, ShipDateModal } from "./components";
-import { formatAddress, formatShipDate, pickAddress, pickPrimaryContact } from "./helpers";
-import { useCustomerDetails, useRemarksEditor, useShipDateEditor } from "./hooks";
-import { $centered, $emptyContainer, $screen } from "./styles";
+import { RemarksModal, ShipDateModal } from "./components";
+import { useRemarksEditor, useShipDateEditor } from "./hooks";
 
 export const DOCUMENT_TYPE_OPTIONS = [
   { value: "order", label: "Sales Order", icon: "receipt-outline" },
@@ -20,34 +27,37 @@ export const DOCUMENT_TYPE_OPTIONS = [
 ];
 
 export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation }) => {
+  // ========== HOOKS
   const { themed, theme } = useAppTheme();
   const { cart, isLoading: isCartLoading } = useCart();
 
-  const [documentType, setDocumentType] = useState<string>("order");
+  const [isLoading, setIsLoading] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [documentType, setDocumentType] = useState<string>("order");
+  const [customer, setCustomer] = useState<BusinessPartner | null>(null);
 
-  const { customer, isLoading: isCustomerLoading } = useCustomerDetails(cart?.CardCode);
   const remarks = useRemarksEditor();
   const shipDate = useShipDateEditor();
 
   const selectedDocumentOption =
     DOCUMENT_TYPE_OPTIONS.find((o) => o.value === documentType) ?? DOCUMENT_TYPE_OPTIONS[0];
 
-  const items = cart?.Items ?? [];
-  const currency = cart?.Currency ?? "";
+  const shippingAddress = useMemo(() => {
+    const addresses = customer?.ShippingAddresses;
+    if (!addresses || addresses.length === 0) return undefined;
+    return addresses.find((a) => a.IsDefault) ?? addresses[0];
+  }, [customer?.ShippingAddresses]);
 
-  const shippingAddress = useMemo(
-    () => pickAddress(customer?.ShippingAddresses),
-    [customer?.ShippingAddresses],
-  );
-  const billingAddress = useMemo(
-    () => pickAddress(customer?.BillingAddresses),
-    [customer?.BillingAddresses],
-  );
-  const primaryContact = useMemo(
-    () => pickPrimaryContact(customer?.ContactPersons),
-    [customer?.ContactPersons],
-  );
+  const billingAddress = useMemo(() => {
+    const addresses = customer?.BillingAddresses;
+    if (!addresses || addresses.length === 0) return undefined;
+    return addresses.find((a) => a.IsDefault) ?? addresses[0];
+  }, [customer?.BillingAddresses]);
+
+  const primaryContact = useMemo(() => {
+    if (!customer?.ContactPersons || customer.ContactPersons.length === 0) return undefined;
+    return customer.ContactPersons.find((c) => c.IsDefault) ?? customer.ContactPersons[0];
+  }, [customer?.ContactPersons]);
 
   useHeader(
     {
@@ -57,6 +67,24 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
     },
     [navigation],
   );
+
+  // ========== VARIABLES
+  const items = cart?.Items ?? [];
+  const currency = cart?.Currency ?? "";
+
+  // ========== EVENTS
+  const onGetCustomer = async (cardCode: string) => {
+    try {
+      const res = await api.getCustomer(cardCode);
+      if (res.kind !== "ok") throw new Error(res.message);
+      setCustomer(res.result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : JSON.stringify(error);
+      Alert.alert("Error", message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const onPlaceOrder = useCallback(async () => {
     if (!cart || items.length === 0) return;
@@ -80,9 +108,16 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
     }
   }, [cart, items.length, documentType, navigation]);
 
+  // ========== EFFECTS
+  useEffect(() => {
+    if (!cart?.CardCode) return;
+    onGetCustomer(cart.CardCode);
+  }, [cart?.CardCode]);
+
+  // ========== VIEWS
   if (isCartLoading) {
     return (
-      <Screen preset="fixed" contentContainerStyle={$centered}>
+      <Screen preset="fixed" contentContainerStyle={$styles.centered}>
         <ActivityIndicator size="large" color={theme.colors.tint} />
       </Screen>
     );
@@ -107,7 +142,7 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
         onValueChange={setDocumentType}
       />
 
-      <SectionCard title="Customer" isLoading={isCustomerLoading}>
+      <SectionCard title="Customer" isLoading={isLoading}>
         <Text size="xxs" weight="medium" numberOfLines={1}>
           {cart.CardName || "—"}
         </Text>
@@ -116,7 +151,7 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
         </Text>
       </SectionCard>
 
-      <SectionCard title="Contact Person" isLoading={isCustomerLoading}>
+      <SectionCard title="Contact Person" isLoading={isLoading}>
         {!!primaryContact ? (
           <View>
             <Text size="xxs" weight="medium">
@@ -130,16 +165,16 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
       </SectionCard>
 
       <SectionCard
+        isLoading={isLoading}
         title="Shipping Address"
-        isLoading={isCustomerLoading}
         trailing={shippingAddress?.AddressName}
       >
         <Text size="xxs">{!!shippingAddress ? formatAddress(shippingAddress) : "-"}</Text>
       </SectionCard>
 
       <SectionCard
+        isLoading={isLoading}
         title="Billing Address"
-        isLoading={isCustomerLoading}
         trailing={billingAddress?.AddressName}
       >
         <Text size="xxs">{!!billingAddress ? formatAddress(billingAddress) : "-"}</Text>
@@ -181,7 +216,9 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
                 </Flex.Col>
                 <Flex.Col>
                   <Text size="xxs" style={themed(item.ShipDate ? $text : $placeholder)}>
-                    {item.ShipDate ? formatShipDate(item.ShipDate) : "Set Ship Date"}
+                    {item.ShipDate
+                      ? formatDate(item.ShipDate, "EEE, dd MMM yyyy")
+                      : "Set Ship Date"}
                   </Text>
                 </Flex.Col>
               </Flex.Row>
@@ -207,7 +244,15 @@ export const CheckoutScreen: FC<AppStackScreenProps<"Checkout">> = ({ navigation
         ))}
       </SectionCard>
 
-      <SummaryCard cart={cart} />
+      <SectionCard>
+        <BreakdownSummary
+          currency={currency}
+          totalAmount={cart?.DocTotal}
+          discount={cart?.BPDiscAmount}
+          taxAmount={cart?.TotalTaxAmount}
+          subtotal={cart?.TotalBeforeDiscount}
+        />
+      </SectionCard>
 
       <Button
         preset="filled"
@@ -258,4 +303,18 @@ const $text: ThemedStyle<TextStyle> = ({ colors }) => ({
 const $placeholder: ThemedStyle<TextStyle> = ({ colors }) => ({
   flex: 1,
   color: colors.textDim,
+});
+
+const $screen: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  paddingHorizontal: spacing.lg,
+  paddingVertical: spacing.md,
+  gap: spacing.md,
+});
+
+const $emptyContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
+  flex: 1,
+  alignItems: "center",
+  justifyContent: "center",
+  gap: spacing.md,
+  paddingHorizontal: spacing.xl,
 });

@@ -10,7 +10,7 @@ import type { CartItem } from "@/services/api";
 import { useAppTheme } from "@/theme/context";
 import { $styles } from "@/theme/styles";
 import type { ThemedStyle } from "@/theme/types";
-import { parseShipDate } from "../helpers";
+import { parseDate } from "@/utils";
 
 export const SHIP_DATE_FORMAT = "yyyy-MM-dd";
 export const SHIP_DATE_DISPLAY_FORMAT = "EEE, dd MMM yyyy";
@@ -50,7 +50,7 @@ export const ShipDateModal: FC<Props> = ({
     if (item === null) setIsIosPickerOpen(false);
   }, [item]);
 
-  const selectedDate = parseShipDate(draft);
+  const selectedDate = parseDate(draft);
   const today = startOfDay(new Date());
   const pickerValue = selectedDate ?? today;
 
